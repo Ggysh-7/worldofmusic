@@ -59,20 +59,20 @@ function AlbumBox({ album, index, albumRefs }) {
 
   return (
     <group ref={groupRef} userData={{ album }}>
-      {/* Main box body */}
+      {/* Main box body (solid colored block) */}
       <mesh castShadow receiveShadow>
         <boxGeometry args={[BOX_W, BOX_H, BOX_D]} />
         <meshStandardMaterial color={album.color} roughness={0.5} metalness={0.05} />
       </mesh>
 
-      {/* Cover group (front face) */}
-      <group ref={coverRef} position={[0, 0, BOX_D / 2 - 0.01]}>
-        {/* Cover art */}
+      {/* Cover group - attached to the front face (+Z), slides left on open */}
+      <group ref={coverRef} position={[0, 0, BOX_D / 2 + 0.005]}>
+        {/* Cover art panel */}
         <mesh castShadow receiveShadow>
           <boxGeometry args={[BOX_W - 0.02, BOX_H - 0.02, 0.01]} />
           <meshStandardMaterial map={coverTexture} roughness={0.3} metalness={0.05} />
         </mesh>
-        {/* Dark back of cover */}
+        {/* Dark backing behind the cover */}
         <mesh position={[0, 0, -0.01]} rotation={[0, Math.PI, 0]}>
           <boxGeometry args={[BOX_W - 0.02, BOX_H - 0.02, 0.01]} />
           <meshStandardMaterial
@@ -82,8 +82,8 @@ function AlbumBox({ album, index, albumRefs }) {
         </mesh>
       </group>
 
-      {/* Inner face (white, hidden until opened) */}
-      <mesh ref={innerRef} visible={false} position={[0, 0, BOX_D / 2 + 0.005]}>
+      {/* Inner face (white, hidden until opened) - the inside back wall */}
+      <mesh ref={innerRef} visible={false} position={[0, 0, BOX_D / 2 + 0.01]}>
         <boxGeometry args={[BOX_W - 0.06, BOX_H - 0.04, 0.02]} />
         <meshStandardMaterial color={0xf5f0eb} roughness={0.95} />
       </mesh>
