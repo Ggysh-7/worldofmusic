@@ -1,0 +1,21 @@
+:root {
+  --bg: #ffffff;
+  --text: #141414;
+  --text-dim: #6b6560;
+  --accent: #d4a574;
+}
+
+html, body, #root {
+  background: var(--bg);
+  width: 100%;
+  height: 100%;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
