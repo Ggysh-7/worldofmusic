@@ -37,6 +37,7 @@ export default function Albums({ isMobile: propMobile }) {
     setActiveAlbum,
     toggleAlbum,
     closeAlbum,
+    collapseAlbum,
     isMobile: storeMobile,
   } = useAlbumStore();
   const albumRefs = useRef([]);
@@ -53,6 +54,7 @@ export default function Albums({ isMobile: propMobile }) {
     setActiveAlbum,
     toggleAlbum,
     closeAlbum,
+    collapseAlbum,
   });
 
   // ↓↓ 全部动画（入场/Browse滚动/Focus/Reset/Open光碟/播放旋转）—— 拆成 hook

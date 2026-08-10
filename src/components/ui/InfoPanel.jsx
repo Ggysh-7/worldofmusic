@@ -17,6 +17,9 @@ export default function InfoPanel() {
     totalTime > 0 ? totalTime : durationToSeconds(activeAlbum.duration);
   const curSec = Math.max(0, currentTime || 0);
 
+  if (!activeAlbum) return null;
+  // ✅ 新增：status=browse 时也隐藏 InfoPanel（点空白 collapse 后，盒子回一排，信息也隐藏）
+  if (status === "browse") return null;
   return (
     <div
       style={{

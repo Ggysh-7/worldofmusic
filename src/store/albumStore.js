@@ -39,6 +39,10 @@ export const useAlbumStore = create((set, get) => ({
   },
   toggleAlbum: () => {
     const { status, activeAlbum } = get();
+    if (status === "browse" && activeAlbum) {
+      set({ status: "focus" });
+      return;
+    }
     if (status === "focus") return set({ status: "open" });
     if (status === "open") {
       // 真正开始播放
@@ -66,6 +70,18 @@ export const useAlbumStore = create((set, get) => ({
       progress: 0,
       currentTime: 0,
     });
+  },
+  // 点空白：只把盒子折回 Browse 一排，歌继续播、信息全留（和 Close 按钮彻底区分）
+  collapseAlbum: () => {
+    const { status, activeAlbum } = get();
+    // 只在有选中专辑、而且不是 browse 时才切（browse 本身已经是一排了，切也白切）
+    if (!activeAlbum || status === "browse") return;
+    set({ status: "browse" });
+    // 注意：其他字段全不动！！
+    // ❌ 不要 audio.pause() / 不要 activeAlbum=null / 不要 scrollOffset=0 / 不要 progress=0
+    // ✅ activeAlbum 保留 → 状态徽标/进度条/底部歌名全留
+    // ✅ audio 继续响 → 歌继续播
+    // ✅ scrollOffset 保留 → 滚到哪就停哪
   },
   setScrollOffset: (scrollOffset) => set({ scrollOffset }),
   setProgress: (p, current, total) =>

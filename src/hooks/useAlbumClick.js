@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
 
@@ -32,6 +32,7 @@ export default function useAlbumClick({
   setActiveAlbum,
   toggleAlbum,
   closeAlbum,
+  collapseAlbum,
 }) {
   const { camera, raycaster, mouse } = r3fDeps;
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -39,15 +40,29 @@ export default function useAlbumClick({
   const hoveredIdxRef = useRef(null);
   hoveredIdxRef.current = hoveredIdx;
 
-  // --- 辅助：从 intersects 第一个命中点向上找带 userData.album 的 group ---
-  function pickAlbumFromIntersects(intersects) {
+  // --- 辅助：从 intersects 命中里挑「真的视觉上点中了某本专辑」的 album 对象
+  //     ✅ 修复核心：命中「盒子背面（DoubleSide 下法线和射线同向）」→ 直接返回 null，算空白
+  //     ✅ 额外：status≠browse 时，命中 activeAlbum 且 distance 异常（打在了延伸面上）→ 也过滤
+  function pickAlbumFromIntersects(intersects, debug = false) {
     if (!intersects || intersects.length === 0) return null;
-    let obj = intersects[0].object;
-    // 一直向上冒泡（命中 mesh → 冒泡到 group → 冒泡到外层 AlbumBox 的 <group userData={{album}}>）
+    const hit = intersects[0];
+    if (!hit?.object || !hit?.face) return null;
+
+    // ======================================================
+    // ✅ 核心修复：命中背面的话，直接算「视觉上没点中」（空白）
+    // face.normal 和面的朝向一致；DoubleSide 下 Three.js 会把 normal 对射线翻转。
+    // 如果 normal · ray.direction > 0 → 命中的是背面（法线与射线同向）→ 丢弃
+    // ======================================================
+    const dot = hit.face.normal.dot(raycaster.ray.direction);
+    const isBackFace = dot > 0;
+
+    if (isBackFace) return null;
+
+    // 正面命中 → 向上冒泡找 userData.album
+    let obj = hit.object;
     while (obj && obj.parent && !obj.userData?.album) obj = obj.parent;
     return obj?.userData?.album ?? null;
   }
-
   // --- 辅助：拿到 ref 后计算 baseRotY（browse 是侧面 90°，focus+ 是正面 0°）---
   function getBaseRotY(ref) {
     const isBrowse = status === "browse";
@@ -71,7 +86,7 @@ export default function useAlbumClick({
       if (ref?.group) targets.push(ref.group);
     });
     const intersects = raycaster.intersectObjects(targets, true);
-    const albumHit = pickAlbumFromIntersects(intersects);
+    const albumHit = pickAlbumFromIntersects(intersects, true);
     const hitIdx = albumHit
       ? albums.findIndex((a) => a.id === albumHit.id)
       : null;
@@ -117,9 +132,15 @@ export default function useAlbumClick({
   }
 
   // --- ③ onClick：点击盒子 → 切专辑 / 打开 / 播放 / 关闭 ---
+  // --- ③ onClick：点击盒子 → 切专辑 / 打开 / 播放 / 关闭（带调试 log）---
   function onClick(e) {
     if (typeof e.stopPropagation === "function") e.stopPropagation();
+    // status≠browse 时，R3F 的 onClick 全部停用！交给 useEffect 里那个 DOM 原生 click（2D 中心区判定）
+    if (status !== "browse") {
+      return;
+    }
     if (!albums || albums.length === 0) return;
+
     const nx = e.nx ?? (e.clientX / window.innerWidth) * 2 - 1;
     const ny = e.ny ?? -(e.clientY / window.innerHeight) * 2 + 1;
     if (mouse) mouse.set(nx, ny);
@@ -132,14 +153,58 @@ export default function useAlbumClick({
     const intersects = raycaster.intersectObjects(targets, true);
     const albumHit = pickAlbumFromIntersects(intersects);
     if (albumHit) {
-      // 命中了盒子：命中的就是当前的 → toggle；否则 → 切换
+      // ✅ 情况 1：真的命中了 album 的某一面 → 切换/toggle
       if (activeAlbum?.id === albumHit.id) toggleAlbum();
       else setActiveAlbum(albumHit);
       return;
     }
-    // 没命中任何盒子 → 如果不是 browse，就视为空白处点击 → 关闭
-    if (status !== "browse") closeAlbum();
+
+    // ✅ 情况 2：命中了「非 album 物体」（例如 Environment 的全景球、透明 background Mesh、Ground 等）
+    //         或者 intersects.length 真的 = 0
+    //         → 统统视为「点空白」：status≠browse 就 collapse
+    if (status !== "browse") {
+      collapseAlbum(); // 只折盒子，歌/信息留着
+    }
+    // ↓ 注意：这里绝对不能再 return 了，上面 2 个 if 已经都处理完了
   }
 
+  // ======================================================
+  // ✅ 终极方案：status!=browse 时，用「2D 屏幕中心安全区」判定（不依赖 R3F 射线，100%准）
+  // ======================================================
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const onDomClick = (e) => {
+      // 只在 focus/open/playing 时接管；browse 状态完全用 R3F 原来的逻辑（点小盒子切歌）
+      if (status === "browse") return;
+      // 防止点到 UI 层（Close 按钮 / 进度条 / 品牌字）也触发
+      const uiEl = e.target?.closest?.(
+        ".ovr-root, .ovr-close-circle, [class*='ovr-']",
+      );
+      if (uiEl) return;
+
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      // 📱 手机单独小一点（手机盒子整体缩小了）
+      const mobile = typeof window !== "undefined" && window.innerWidth <= 768;
+      // 盒子封面视觉比例：Web 约宽 26% / 高 42%；手机约宽 40% / 高 34%
+      const RX = w * (mobile ? 0.4 : 0.14);
+      const RY = h * (mobile ? 0.34 : 0.3);
+      const cx = w / 2;
+      const cy = h / 2;
+      const inSafe =
+        Math.abs(e.clientX - cx) <= RX && Math.abs(e.clientY - cy) <= RY;
+
+      if (inSafe)
+        toggleAlbum(); // 安全区内 → 点盒子
+      else collapseAlbum(); // 安全区外 → 点空白（折回去，歌继续播）
+    };
+
+    // capture: true 让我们比 R3F 的合成事件更早拿到，避免被 stopPropagation 干掉
+    window.addEventListener("click", onDomClick, true);
+
+    return () => {
+      window.removeEventListener("click", onDomClick, true);
+    };
+  }, [status, toggleAlbum, collapseAlbum]);
   return [onPointerMove, onPointerOut, onClick];
 }

@@ -21,7 +21,7 @@ export default function TopBar() {
       </div>
 
       {/* 右上：只有选中专辑时才显示「状态 + Close」*/}
-      {activeAlbum && (
+      {activeAlbum && status !== "browse" && (
         <>
           <div className="ovr-status" style={styles.statusBadge}>
             <span
