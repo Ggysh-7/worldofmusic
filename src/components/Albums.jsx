@@ -193,22 +193,86 @@ function AlbumBox({ album, index, albumRefs }) {
       </mesh>
 
       {/* 光碟组 */}
+      {/* 光碟组 —— 真实 CD 结构：外环透明 + 封面主环 + 内圈透明 + 中心透明孔 */}
       <group
         ref={discRef}
         visible={false}
         position={[0, 0, -BOX_D / 2 - 0.008]}
       >
-        <mesh rotation={[Math.PI / 2, 0, 0]} castShadow>
-          <cylinderGeometry args={[0.4, 0.4, 0.02, 64]} />
-          <meshStandardMaterial
-            color={0x111111}
+        {/* ① 外环透明边— 半径 0.58 ~ 0.60（更薄）*/}
+        <mesh>
+          <ringGeometry args={[0.58, 0.6, 96]} />
+          <meshPhysicalMaterial
+            color={0xffffff}
+            transparent={true}
+            opacity={0.25}
+            transmission={0.9}
             roughness={0.05}
-            metalness={0.9}
+            metalness={0.1}
+            thickness={0.003}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
+            side={THREE.DoubleSide}
           />
         </mesh>
-        <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.003]}>
-          <cylinderGeometry args={[0.13, 0.13, 0.025, 32]} />
-          <meshStandardMaterial color={album.color} roughness={0.5} />
+
+        {/* ② 封面主环（贴封面图，中心挖空到内圈）— 半径 0.20 ~ 0.58 */}
+        <mesh
+          key={`disc-cover-${coverTick}`}
+          position={[0, 0, 0.001]}
+          castShadow
+        >
+          <ringGeometry args={[0.2, 0.58, 96]} />
+          <meshStandardMaterial
+            map={coverTexture}
+            color={0xffffff}
+            roughness={0.4}
+            metalness={0.0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+
+        {/* ③ 内圈透明环（你截图蓝圈位置）— 半径 0.13 ~ 0.20 */}
+        <mesh position={[0, 0, 0.002]}>
+          <ringGeometry args={[0.13, 0.2, 64]} />
+          <meshPhysicalMaterial
+            color={0xffffff}
+            transparent={true}
+            opacity={0.45}
+            transmission={0.85}
+            roughness={0.05}
+            metalness={0.05}
+            thickness={0.025}
+            clearcoat={1}
+            clearcoatRoughness={0.05}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+
+        {/* ④ 中心白色小圆片（夹在透明层中间的 CD 内芯）— 半径 0.06 ~ 0.13 */}
+        <mesh position={[0, 0, 0.003]}>
+          <ringGeometry args={[0.06, 0.13, 48]} />
+          <meshStandardMaterial
+            color={0xfafafa}
+            roughness={0.6}
+            metalness={0.0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+
+        {/* ⑤ 中心最小的透明孔（你截图蓝圈里的小空心）— 半径 0 ~ 0.06 透明覆盖 */}
+        <mesh position={[0, 0, 0.004]}>
+          <circleGeometry args={[0.06, 48]} />
+          <meshPhysicalMaterial
+            color={0xffffff}
+            transparent={true}
+            opacity={0.55}
+            transmission={0.95}
+            roughness={0.02}
+            thickness={0.02}
+            clearcoat={1}
+            side={THREE.DoubleSide}
+          />
         </mesh>
       </group>
     </group>
