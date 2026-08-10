@@ -5,9 +5,9 @@ import gsap from "gsap";
 import { useAlbumStore } from "../store/albumStore";
 import { albums } from "../data/albums";
 
-const BOX_W = 1.2;
-const BOX_H = 1.6;
-const BOX_D = 0.35;
+const BOX_W = 1.4;
+const BOX_H = 1.9;
+const BOX_D = 0.15;
 const SPACING = 1.8;
 
 function AlbumBox({ album, index, albumRefs }) {
@@ -16,6 +16,78 @@ function AlbumBox({ album, index, albumRefs }) {
   const innerRef = useRef();
   const [coverTexture, setCoverTexture] = useState(null);
   const [coverTick, setCoverTick] = useState(0);
+
+  // 书脊贴图（封面拉伸 + 竖排白色文字 title+artist）
+  const [spineTexture, setSpineTexture] = useState(null);
+  const [spineTick, setSpineTick] = useState(0);
+  useEffect(() => {
+    const W = 256,
+      H = 1024; // 书脊画布：窄 × 高（比例 BOX_D:BOX_H）
+    const c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext("2d");
+    // ---- 先画封底：把封面图直接拉伸铺满（不保持比例，直接拉伸）----
+    ctx.fillStyle = album.color;
+    ctx.fillRect(0, 0, W, H);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    const drawText = () => {
+      // ---- 再叠竖排白色文字（沿Y轴从下往上写）----
+      ctx.save();
+      // 画布逆时针转 90°，这样画出来的文字是「沿着 Y 轴从下往上」读
+      ctx.translate(0, H);
+      ctx.rotate(-Math.PI / 2);
+      // 现在坐标系：X 正向 = 原来 Y 正向（从下往上）；Y 正向 = 原来 -X（从右到左）
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 2;
+      // 上半（离书脊底部近的一侧）：歌名 title（粗体大一点）
+      ctx.font = "bold 52px sans-serif";
+      ctx.fillText(album.title, H / 2, W * 0.38);
+      // 下半（离书脊顶部近的一侧）：作者 artist（常规体小一点）
+      ctx.font = "38px sans-serif";
+      ctx.fillText(album.artist, H / 2, W * 0.72);
+      ctx.restore();
+      spineTex.needsUpdate = true;
+      setSpineTick((t) => t + 1);
+    };
+    img.onload = () => {
+      try {
+        // ---- 先画清晰拉伸图到离屏 canvas ----
+        const buf = document.createElement("canvas");
+        buf.width = W;
+        buf.height = H;
+        buf.getContext("2d").drawImage(img, 0, 0, W, H);
+        // ---- 再用模糊滤镜画到主 canvas 上（只模糊背景）----
+        ctx.save();
+        ctx.filter = "blur(22px) saturate(1.2) brightness(0.85)";
+        ctx.drawImage(buf, 0, 0, W, H);
+        ctx.restore(); // 滤镜只作用于背景，后面文字不模糊
+        drawText();
+      } catch (_) {
+        drawText();
+      }
+    };
+    img.onerror = () => drawText();
+    img.src = album.cover;
+    const spineTex = new THREE.CanvasTexture(c);
+    spineTex.colorSpace = THREE.SRGBColorSpace;
+    spineTex.anisotropy = 4;
+    spineTex.needsUpdate = true;
+    setSpineTexture(spineTex);
+    return () => {
+      img.onload = img.onerror = null;
+      try {
+        img.src = "";
+      } catch (_) {}
+    };
+  }, [album.title, album.artist, album.cover, album.color]);
 
   useEffect(() => {
     const canvas = document.createElement("canvas");
@@ -83,8 +155,9 @@ function AlbumBox({ album, index, albumRefs }) {
 
   return (
     <group ref={groupRef} userData={{ album }} rotation={[0, Math.PI / 2, 0]}>
-      {/* ① -X 面（窄条·书脊占位）BOX_D × BOX_H，以后换书脊图 */}
+      {/* ① -X 面（窄条·书脊：封面拉伸 + 竖排白字 title+artist）*/}
       <mesh
+        key={`xneg-${spineTick}`}
         position={[-BOX_W / 2, 0, 0]}
         rotation={[0, -Math.PI / 2, 0]}
         castShadow
@@ -92,15 +165,17 @@ function AlbumBox({ album, index, albumRefs }) {
       >
         <planeGeometry args={[BOX_D, BOX_H]} />
         <meshStandardMaterial
-          color={album.color}
+          map={spineTexture}
+          color={0xffffff}
           roughness={0.5}
-          metalness={0.05}
+          metalness={0.0}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* ② +X 面（窄条·书脊占位）BOX_D × BOX_H，以后换书脊图 */}
+      {/* ② +X 面（窄条·书脊：封面拉伸 + 竖排白字 title+artist）*/}
       <mesh
+        key={`xpos-${spineTick}`}
         position={[BOX_W / 2, 0, 0]}
         rotation={[0, Math.PI / 2, 0]}
         castShadow
@@ -108,9 +183,10 @@ function AlbumBox({ album, index, albumRefs }) {
       >
         <planeGeometry args={[BOX_D, BOX_H]} />
         <meshStandardMaterial
-          color={album.color}
+          map={spineTexture}
+          color={0xffffff}
           roughness={0.5}
-          metalness={0.05}
+          metalness={0.0}
           side={THREE.DoubleSide}
         />
       </mesh>
@@ -222,7 +298,7 @@ function AlbumBox({ album, index, albumRefs }) {
           position={[0, 0, 0.001]}
           castShadow
         >
-          <ringGeometry args={[0.2, 0.58, 96]} />
+          <ringGeometry args={[0.2, 0.73, 96]} />
           <meshStandardMaterial
             map={coverTexture}
             color={0xffffff}
