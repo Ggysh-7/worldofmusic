@@ -15,6 +15,7 @@ export const useAlbumStore = create((set, get) => ({
   progress: 0, // 0~1，真实进度（替代原来 UIOverlay 的假 interval）
   currentTime: 0, // 当前秒
   totalTime: 0, // 总秒（真实从 audio 读，不再用 album.duration 手写字）
+  isMobile: false, // ≤768px 由 App.jsx 自动更新
 
   setAlbums: (albums) => set({ albums }),
   setActiveAlbum: (album) => {

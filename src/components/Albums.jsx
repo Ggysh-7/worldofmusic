@@ -4,13 +4,13 @@ import * as THREE from "three";
 import gsap from "gsap";
 import { useAlbumStore } from "../store/albumStore";
 import { albums } from "../data/albums";
+import { SPACING, SPACING_MOBILE } from "../App.jsx";
 
 const BOX_W = 1.4;
 const BOX_H = 1.9;
 const BOX_D = 0.15;
-const SPACING = 1.8;
 
-function AlbumBox({ album, index, albumRefs }) {
+function AlbumBox({ album, index, albumRefs, isMobile }) {
   const groupRef = useRef();
   const discRef = useRef();
   const innerRef = useRef();
@@ -159,7 +159,10 @@ function AlbumBox({ album, index, albumRefs }) {
       userData={{ album }}
       rotation={[0, Math.PI / 2, 0]}
       position={[
-        index * SPACING - ((8 - 1) * SPACING) / 2, // ← 出生就在最终目标 X
+        (() => {
+          const s = isMobile ? SPACING_MOBILE : SPACING;
+          return index * s - ((albums.length - 1) * s) / 2;
+        })(),
         0,
         0,
       ]}
@@ -278,7 +281,6 @@ function AlbumBox({ album, index, albumRefs }) {
       </mesh>
 
       {/* 光碟组 */}
-      {/* 光碟组 —— 真实 CD 结构：外环透明 + 封面主环 + 内圈透明 + 中心透明孔 */}
       <group
         ref={discRef}
         visible={false}
@@ -317,7 +319,7 @@ function AlbumBox({ album, index, albumRefs }) {
           />
         </mesh>
 
-        {/* ③ 内圈透明环（你截图蓝圈位置）— 半径 0.13 ~ 0.20 */}
+        {/* ③ 内圈透明环 — 半径 0.13 ~ 0.20 */}
         <mesh position={[0, 0, 0.002]}>
           <ringGeometry args={[0.13, 0.2, 64]} />
           <meshPhysicalMaterial
@@ -334,7 +336,7 @@ function AlbumBox({ album, index, albumRefs }) {
           />
         </mesh>
 
-        {/* ④ 中心白色小圆片（夹在透明层中间的 CD 内芯）— 半径 0.06 ~ 0.13 */}
+        {/* ④ 中心白色小圆片 — 半径 0.06 ~ 0.13 */}
         <mesh position={[0, 0, 0.003]}>
           <ringGeometry args={[0.06, 0.13, 48]} />
           <meshStandardMaterial
@@ -345,7 +347,7 @@ function AlbumBox({ album, index, albumRefs }) {
           />
         </mesh>
 
-        {/* ⑤ 中心最小的透明孔（你截图蓝圈里的小空心）— 半径 0 ~ 0.06 透明覆盖 */}
+        {/* ⑤ 中心最小的透明孔 — 半径 0 ~ 0.06 透明覆盖 */}
         <mesh position={[0, 0, 0.004]}>
           <circleGeometry args={[0.06, 48]} />
           <meshPhysicalMaterial
@@ -364,7 +366,7 @@ function AlbumBox({ album, index, albumRefs }) {
   );
 }
 
-export default function Albums() {
+export default function Albums({ isMobile: propMobile }) {
   const {
     albums: storeAlbums,
     activeAlbum,
@@ -373,11 +375,14 @@ export default function Albums() {
     setActiveAlbum,
     toggleAlbum,
     closeAlbum,
+    isMobile: storeMobile,
   } = useAlbumStore();
   const albumRefs = useRef([]);
   const { camera, raycaster, mouse } = useThree();
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const isEntering = useRef(false);
+  const isMobile = storeMobile ?? propMobile ?? false;
+  const sp = isMobile ? SPACING_MOBILE : SPACING;
 
   // 入场（group 出生位置就对了，这里只做 scale 弹入 + 轻微下落，不会丢盒子）
   useEffect(() => {
@@ -386,7 +391,6 @@ export default function Albums() {
     const tl = gsap.timeline();
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
-      // 即便 ref 还没注册上，直接通过 group 对象兜底（用 Three.js scene 找也行，这里直接 set 初始值在下个 tick）
       if (!ref?.group) return;
       gsap.killTweensOf([ref.group.position, ref.group.scale]);
       ref.group.scale.set(0, 0, 0);
@@ -420,7 +424,7 @@ export default function Albums() {
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
-      const base = i * SPACING - ((storeAlbums.length - 1) * SPACING) / 2;
+      const base = i * sp - ((storeAlbums.length - 1) * sp) / 2;
       gsap.killTweensOf(ref.group.position, { x: true });
       gsap.to(ref.group.position, {
         x: base + scrollOffset,
@@ -428,7 +432,7 @@ export default function Albums() {
         ease: "power2.out",
       });
     });
-  }, [scrollOffset, status]);
+  }, [scrollOffset, status, sp, storeAlbums.length]);
 
   // Reset → Browse
   useEffect(() => {
@@ -436,7 +440,7 @@ export default function Albums() {
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
-      const base = i * SPACING - ((storeAlbums.length - 1) * SPACING) / 2;
+      const base = i * sp - ((storeAlbums.length - 1) * sp) / 2;
       gsap.killTweensOf(ref.group.rotation, true);
       gsap.to(ref.group.position, {
         x: base + scrollOffset,
@@ -472,11 +476,15 @@ export default function Albums() {
         ref.disc.visible = false;
       }
     });
-  }, [status, storeAlbums]);
+  }, [status, storeAlbums, sp, scrollOffset]);
 
   // Focus
   useEffect(() => {
     if (status !== "focus" || !activeAlbum) return;
+    const focusZ = isMobile ? 0.7 : 1.5;
+    const focusScale = isMobile ? 0.88 : 1.2;
+    const otherZ = isMobile ? -1.8 : -2.5;
+    const otherScale = isMobile ? 0.7 : 0.8;
     storeAlbums.forEach((album, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
@@ -485,7 +493,7 @@ export default function Albums() {
         gsap.to(ref.group.position, {
           x: 0,
           y: 0,
-          z: 1.5,
+          z: focusZ,
           duration: 0.7,
           ease: "power3.inOut",
         });
@@ -497,19 +505,19 @@ export default function Albums() {
           ease: "power3.inOut",
         });
         gsap.to(ref.group.scale, {
-          x: 1.2,
-          y: 1.2,
-          z: 1.2,
+          x: focusScale,
+          y: focusScale,
+          z: focusScale,
           duration: 0.7,
           ease: "power3.inOut",
         });
       } else {
-        const base = i * SPACING - ((storeAlbums.length - 1) * SPACING) / 2;
+        const base = i * sp - ((storeAlbums.length - 1) * sp) / 2;
         gsap.killTweensOf(ref.group.rotation, true);
         gsap.to(ref.group.position, {
           x: base,
           y: 0,
-          z: -2.5,
+          z: otherZ,
           duration: 0.7,
           ease: "power3.inOut",
         });
@@ -521,13 +529,12 @@ export default function Albums() {
           ease: "power3.inOut",
         });
         gsap.to(ref.group.scale, {
-          x: 0.8,
-          y: 0.8,
-          z: 0.8,
+          x: otherScale,
+          y: otherScale,
+          z: otherScale,
           duration: 0.7,
           ease: "power3.inOut",
         });
-        // 🚨 关键：非当前盒子 —— 光碟/内页强制收回去（切换 activeAlbum 时，前一个盒子必须重置）
         if (ref.inner) ref.inner.visible = false;
         if (ref.disc) {
           gsap.killTweensOf(ref.disc.position, true);
@@ -538,16 +545,15 @@ export default function Albums() {
             duration: 0.45,
             ease: "power2.inOut",
           });
-          // 动画结束后隐藏（避免半路上被看到）
           setTimeout(() => {
             if (ref.disc) ref.disc.visible = false;
           }, 420);
         }
       }
     });
-  }, [activeAlbum, status, storeAlbums]);
+  }, [activeAlbum, status, storeAlbums, sp, isMobile]);
 
-  // Open / Playing（只滑光碟，封面不动）
+  // Open / Playing（只滑光碟，封面不动）—— 手机光碟滑出距离缩短
   useEffect(() => {
     if ((status !== "open" && status !== "playing") || !activeAlbum) return;
     const idx = storeAlbums.findIndex((a) => a.id === activeAlbum.id);
@@ -556,8 +562,10 @@ export default function Albums() {
     if (ref.inner) ref.inner.visible = true;
     if (ref.disc) {
       gsap.killTweensOf(ref.disc.position, true);
+      // 桌面：滑到 BOX_W/2 外再多 0.15；手机：刚好露出 70%，不飞出右边缘
+      const discOutX = isMobile ? BOX_W / 2 - 0.1 : BOX_W / 2 + 0.15;
       gsap.to(ref.disc.position, {
-        x: BOX_W / 2 + 0.15,
+        x: discOutX,
         y: 0,
         z: -BOX_D / 2 - 0.008 + 0.1,
         duration: 0.6,
@@ -566,7 +574,7 @@ export default function Albums() {
       });
       ref.disc.visible = true;
     }
-  }, [status, activeAlbum, storeAlbums]);
+  }, [status, activeAlbum, storeAlbums, isMobile]);
 
   useFrame((_, delta) => {
     if (status !== "playing" || !activeAlbum) return;
@@ -674,6 +682,7 @@ export default function Albums() {
           album={album}
           index={i}
           albumRefs={albumRefs}
+          isMobile={isMobile}
         />
       ))}
     </group>

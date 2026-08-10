@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import { useAlbumStore } from "../store/albumStore";
 
-export default function UIOverlay() {
-  const { activeAlbum, status, closeAlbum, progress, currentTime, totalTime } =
-    useAlbumStore();
+export default function UIOverlay({ isMobile: propMobile }) {
+  const {
+    activeAlbum,
+    status,
+    closeAlbum,
+    progress,
+    currentTime,
+    totalTime,
+    isMobile: storeMobile,
+  } = useAlbumStore();
+  const isMobile = storeMobile ?? propMobile ?? false;
 
-  // 用真实 totalTime（audio loadedmetadata 之后拿到的），没有就 fallback 用 album.duration
   const totalSec =
     totalTime > 0
       ? totalTime
@@ -16,28 +23,58 @@ export default function UIOverlay() {
           })()
         : 0;
 
-  // const formatTime = (percent, duration) => {
-  //   const totalSec = parseDuration(duration)
-  //   const elapsed = Math.floor(totalSec * percent / 100)
-  //   return `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`
-  // }
-
-  // const parseDuration = (dur) => {
-  //   const [m, s] = dur.split(':').map(Number)
-  //   return m * 60 + s
-  // }
-
   return (
-    <div style={styles.overlay}>
+    <div
+      className={isMobile ? "ovr-root ovr-mobile" : "ovr-root"}
+      style={styles.overlay}
+    >
+      {/* 注入响应式 CSS（≤768px 生效）*/}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @media (max-width: 768px) {
+          .ovr-mobile { padding: 20px 18px !important; }
+          .ovr-mobile .ovr-brand-title { font-size: 10px !important; letter-spacing: 0.2em !important; }
+          .ovr-mobile .ovr-brand-sub { font-size: 8px !important; }
+          .ovr-mobile .ovr-status { gap: 5px !important; font-size: 8px !important; margin-left: 8px; }
+          .ovr-close-circle {
+            position: absolute; top: 58px; right: 18px;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 1px solid rgba(20,20,20,0.18); background: rgba(255,255,255,0.88);
+            color: rgba(20,20,20,0.6); font-size: 15px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; pointer-events: auto;
+            backdrop-filter: blur(6px);
+            font-weight: 500;
+            user-select: none;
+            z-index: 20;
+          }
+          .ovr-info-title { font-size: 16px !important; }
+          .ovr-info-artist { font-size: 8.5px !important; }
+          .ovr-progress-track { width: 100% !important; }
+          .ovr-time { font-size: 8.5px !important; }
+          .ovr-footer-stack {
+            flex-direction: column !important; align-items: center !important; gap: 8px !important;
+          }
+          .ovr-footer-stack > span { font-size: 8px !important; text-align: center; }
+        }
+      `,
+        }}
+      />
+
       {/* Top bar */}
       <div style={styles.topBar}>
         <div style={styles.brand}>
-          <span style={styles.brandTitle}>Musicword</span>
-          <span style={styles.brandSub}>Digital Collection</span>
+          <span className="ovr-brand-title" style={styles.brandTitle}>
+            Musicword
+          </span>
+          <span className="ovr-brand-sub" style={styles.brandSub}>
+            Digital Collection
+          </span>
         </div>
         {activeAlbum && (
           <>
-            <div style={styles.statusBadge}>
+            <div className="ovr-status" style={styles.statusBadge}>
               <span
                 style={{
                   ...styles.dot,
@@ -55,20 +92,31 @@ export default function UIOverlay() {
                       : "Playing"}
               </span>
             </div>
-            <button
-              onClick={closeAlbum}
-              style={styles.closeBtn}
-              onMouseEnter={(e) => {
-                e.target.style.borderColor = "rgba(240,236,228,0.6)";
-                e.target.style.color = "#141414";
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.borderColor = "rgba(20,20,20,0.2)";
-                e.target.style.color = "rgba(20,20,20,0.5)";
-              }}
-            >
-              Close
-            </button>
+            {isMobile ? (
+              <button
+                onClick={closeAlbum}
+                className="ovr-close-circle"
+                aria-label="Close"
+                title="Close"
+              >
+                ✕
+              </button>
+            ) : (
+              <button
+                onClick={closeAlbum}
+                style={styles.closeBtn}
+                onMouseEnter={(e) => {
+                  e.target.style.borderColor = "rgba(240,236,228,0.6)";
+                  e.target.style.color = "#141414";
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.borderColor = "rgba(20,20,20,0.2)";
+                  e.target.style.color = "rgba(20,20,20,0.5)";
+                }}
+              >
+                Close
+              </button>
+            )}
           </>
         )}
       </div>
@@ -78,7 +126,7 @@ export default function UIOverlay() {
         <div style={styles.hint}>
           <p
             style={{
-              fontSize: "11px",
+              fontSize: isMobile ? "10px" : "11px",
               letterSpacing: "0.25em",
               textTransform: "uppercase",
               color: "rgba(20,20,20,0.25)",
@@ -90,25 +138,79 @@ export default function UIOverlay() {
         </div>
       )}
 
-      {/* Album info panel */}
+      {/* ↓↓ 重点调整：Album info panel 整体放到蓝框位置 —— 右下角，靠底部 footer 上方，右对齐
+              Web / 手机统一使用绝对定位定位到右下角，不再参与 Flex 的 space-between 布局 */}
       {activeAlbum && (
-        <div style={styles.infoPanel}>
-          <div style={styles.albumInfo}>
-            <span style={styles.artist}>{activeAlbum.artist}</span>
-            <h2 style={styles.title}>{activeAlbum.title}</h2>
+        <div
+          style={{
+            position: "absolute",
+            // Web 右下角：离底部 footer（~72px 高）上方 28px；离右边 44px；
+            // 手机右下角：离底部上方 28px，离右边 22px，居中宽度 82%
+            bottom: isMobile ? 108 : 100, // 蓝框底部 = 从下往上
+            right: isMobile ? 22 : 48, // 蓝框右侧 = 从右往左
+            left: isMobile ? 22 : "auto",
+            width: isMobile ? "auto" : 380,
+            maxWidth: isMobile ? "calc(100% - 44px)" : 420,
+            // 右对齐文字（在右下角更自然）
+            textAlign: isMobile ? "left" : "right",
+            pointerEvents: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          {/* 桌面右对齐 / 手机左对齐 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              alignItems: isMobile ? "flex-start" : "flex-end",
+            }}
+          >
+            <span className="ovr-info-artist" style={styles.artist}>
+              {activeAlbum.artist}
+            </span>
+            <h2
+              className="ovr-info-title"
+              style={{
+                ...styles.title,
+                textAlign: isMobile ? "left" : "right",
+              }}
+            >
+              {activeAlbum.title}
+            </h2>
           </div>
+
           {status === "playing" && (
-            <div style={styles.player}>
-              <div style={styles.progressTrack}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="ovr-progress-track" style={styles.progressTrack}>
                 <div
-                  style={{ ...styles.progressFill, width: `${progress}%` }}
+                  style={{
+                    ...styles.progressFill,
+                    width: `${progress * 100}%`,
+                  }}
                 />
               </div>
-              <div style={styles.playerControls}>
-                <span style={styles.time}>
-                  {`${Math.floor(currentTime / 60)}:${String(Math.floor(currentTime % 60)).padStart(2, "0")}`}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: isMobile ? "space-between" : "flex-end",
+                  alignItems: "center",
+                  gap: isMobile ? 0 : 12,
+                }}
+              >
+                <span
+                  className="ovr-time"
+                  style={{ ...styles.time, order: isMobile ? 0 : 2 }}
+                >
+                  {`${Math.floor(currentTime / 60)}:${String(
+                    Math.floor(currentTime % 60),
+                  ).padStart(2, "0")}`}
                   {" / "}
-                  {`${Math.floor(totalSec / 60)}:${String(Math.floor(totalSec % 60)).padStart(2, "0")}`}
+                  {`${Math.floor(totalSec / 60)}:${String(
+                    Math.floor(totalSec % 60),
+                  ).padStart(2, "0")}`}
                 </span>
               </div>
             </div>
@@ -116,10 +218,10 @@ export default function UIOverlay() {
         </div>
       )}
 
-      {/* Footer */}
-      <div style={styles.footer}>
+      {/* Footer —— 保持在最底部 */}
+      <div className={isMobile ? "ovr-footer-stack" : ""} style={styles.footer}>
         <span style={styles.footerText}>3D Album Collection</span>
-        <span style={styles.footerText}>Built with Three.js</span>
+        <span style={styles.footerText}>Ggysh7</span>
         {activeAlbum && (
           <span style={styles.footerTrack}>
             {activeAlbum.artist} — {activeAlbum.title}
@@ -208,6 +310,7 @@ const styles = {
     right: 0,
     textAlign: "center",
   },
+  // 下面几个样式还保留在 styles 变量里，被 className 覆盖前有默认值
   infoPanel: {
     display: "flex",
     flexDirection: "column",
