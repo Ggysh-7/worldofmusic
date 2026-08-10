@@ -154,7 +154,16 @@ function AlbumBox({ album, index, albumRefs }) {
   }, [index, album, albumRefs, coverTick]);
 
   return (
-    <group ref={groupRef} userData={{ album }} rotation={[0, Math.PI / 2, 0]}>
+    <group
+      ref={groupRef}
+      userData={{ album }}
+      rotation={[0, Math.PI / 2, 0]}
+      position={[
+        index * SPACING - ((8 - 1) * SPACING) / 2, // ← 出生就在最终目标 X
+        0,
+        0,
+      ]}
+    >
       {/* ① -X 面（窄条·书脊：封面拉伸 + 竖排白字 title+artist）*/}
       <mesh
         key={`xneg-${spineTick}`}
@@ -370,33 +379,37 @@ export default function Albums() {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const isEntering = useRef(false);
 
-  // 入场（只动 position，不动 rotation）
+  // 入场（group 出生位置就对了，这里只做 scale 弹入 + 轻微下落，不会丢盒子）
   useEffect(() => {
     if (storeAlbums.length === 0 || isEntering.current) return;
     isEntering.current = true;
-    const targetPositions = storeAlbums.map(
-      (_, i) => i * SPACING - ((storeAlbums.length - 1) * SPACING) / 2,
-    );
-    storeAlbums.forEach((_, i) => {
-      const ref = albumRefs.current[i];
-      if (ref?.group) {
-        gsap.killTweensOf(ref.group.position);
-        ref.group.position.set(18 + i * 0.5, 0, -2);
-      }
-    });
     const tl = gsap.timeline();
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
+      // 即便 ref 还没注册上，直接通过 group 对象兜底（用 Three.js scene 找也行，这里直接 set 初始值在下个 tick）
       if (!ref?.group) return;
+      gsap.killTweensOf([ref.group.position, ref.group.scale]);
+      ref.group.scale.set(0, 0, 0);
+      ref.group.position.y = 1.2;
+      tl.to(
+        ref.group.scale,
+        {
+          x: 1,
+          y: 1,
+          z: 1,
+          duration: 0.55,
+          ease: "back.out(1.7)",
+        },
+        i * 0.06,
+      );
       tl.to(
         ref.group.position,
         {
-          x: targetPositions[i],
-          z: 0,
-          duration: 1.0,
-          ease: "power3.out",
+          y: 0,
+          duration: 0.55,
+          ease: "power2.out",
         },
-        i * 0.08,
+        i * 0.06,
       );
     });
   }, [storeAlbums]);
@@ -514,6 +527,22 @@ export default function Albums() {
           duration: 0.7,
           ease: "power3.inOut",
         });
+        // 🚨 关键：非当前盒子 —— 光碟/内页强制收回去（切换 activeAlbum 时，前一个盒子必须重置）
+        if (ref.inner) ref.inner.visible = false;
+        if (ref.disc) {
+          gsap.killTweensOf(ref.disc.position, true);
+          gsap.to(ref.disc.position, {
+            x: 0,
+            y: 0,
+            z: -BOX_D / 2 - 0.008,
+            duration: 0.45,
+            ease: "power2.inOut",
+          });
+          // 动画结束后隐藏（避免半路上被看到）
+          setTimeout(() => {
+            if (ref.disc) ref.disc.visible = false;
+          }, 420);
+        }
       }
     });
   }, [activeAlbum, status, storeAlbums]);

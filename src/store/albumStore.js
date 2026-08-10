@@ -18,13 +18,23 @@ export const useAlbumStore = create((set, get) => ({
 
   setAlbums: (albums) => set({ albums }),
   setActiveAlbum: (album) => {
-    // 切专辑时：切音频 src，重置进度
-    if (audioEl && album?.audio && audioEl.src !== album.audio) {
+    // 切专辑时 —— 上一首先暂停归零（不管 src 变不变，防止继续响）
+    if (audioEl) {
       audioEl.pause();
+      audioEl.currentTime = 0;
+    }
+    // 换了 src 才 load
+    if (audioEl && album?.audio && audioEl.src !== album.audio) {
       audioEl.src = album.audio;
       audioEl.load();
     }
-    set({ activeAlbum: album, status: "focus", progress: 0, currentTime: 0 });
+    set({
+      activeAlbum: album,
+      status: "focus",
+      progress: 0,
+      currentTime: 0,
+      totalTime: 0,
+    });
   },
   toggleAlbum: () => {
     const { status, activeAlbum } = get();

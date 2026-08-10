@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "postbuild": "node -e \"const fs=require('node:fs'),path=require('node:path');['dist/covers','dist/music'].forEach(d=>{const p=path.resolve(process.cwd(),d);fs.existsSync(p)&&fs.rmSync(p,{recursive:true,force:true})})\"",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -8,3 +8,5 @@ dist/
 coverage/
 .vscode/
 .idea/
+public/music/*
+public/covers/*
