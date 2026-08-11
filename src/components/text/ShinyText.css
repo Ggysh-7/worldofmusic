@@ -1,0 +1,16 @@
+.shiny-text {
+  display: inline-block;
+  line-height: 1;
+  text-transform: uppercase;
+  padding: 0 2px;
+}
+
+.top-brand-title {
+  font-size: 13px;
+  letter-spacing: 0.25em;
+}
+
+.footer-shiny {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+}

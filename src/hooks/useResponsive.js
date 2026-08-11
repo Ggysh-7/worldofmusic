@@ -26,7 +26,8 @@ export default function useResponsive(breakpoint = MOBILE_BP) {
       const mobile = window.innerWidth <= breakpoint;
       setLocalMobile((prev) => {
         // 变了才同步 set 一次，避免 React 18 严格模式重复写
-        if (prev !== mobile) setIsMobile(mobile);
+        if (prev !== mobile)
+          typeof setIsMobile === "function" && setIsMobile(mobile);
         return mobile;
       });
     };

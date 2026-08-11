@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import useResponsive from "./hooks/useResponsive.js";
 import useScrollTouch from "./hooks/useScrollTouch.js";
@@ -20,19 +20,20 @@ import {
   MOBILE_BP,
 } from "./constants/layout.js";
 import { Environment } from "@react-three/drei";
+import Grainient from "./components/backgrounds/Grainient.jsx";
 
 export default function App() {
-  // ① 开屏动画（脚本 B 黑胶仪式感，最短 1s 展示）
+  //  开屏动画（脚本 B 黑胶仪表感，最短 1s 展示）
   //   showSplash: 蒙层显示 / splashProgress: 0~1 假进度条 / canStartScene: 总开关（全部好了才 true）
   const [showSplash, splashProgress, canStartScene] = useSplashTimer(1000);
 
-  // ② 响应式（媒体查询 isMobile）
+  //   responsive（媒体查询 isMobile）
   const isMobile = useResponsive();
 
-  // ③ Browse 滚动（滚轮 + 触摸）
+  //  Browse 滚动（滚轮 + 触摸）
   useScrollTouch(isMobile, albums.length);
 
-  // ④ 启动时灌 albums 数据
+  //  启动时灌 albums 数据
   useEffect(() => {
     useAlbumStore.setState({ albums });
   }, [albums]);
@@ -43,15 +44,17 @@ export default function App() {
       style={{
         width: "100vw",
         height: "100vh",
-        background: "#ffffff",
         position: "relative",
         touchAction: "pan-y",
       }}
     >
-      {/* 开屏动画（fixed z-9999 盖最上层） */}
+      {/* 开屏动画（fixed z-9999 盖最上层）*/}
       <SplashScreen show={showSplash} progress={splashProgress} />
 
-      {/* ✅ Canvas 外面包一层 div：canStartScene=true 才 200ms 淡入出来（绝不在 Splash 期间显示任何盒子） */}
+      {/* Grainient 背景（fixed 定位，在 Canvas 下方，z-index=0）*/}
+      <Grainient color1="#01847F" color2="#F9D2E4" color3="#ffffff" />
+
+      {/*  Canvas 外面包一层 div：canStartScene=true 才 200ms 淡入出来（绝不在 Splash 期间显示任何盒子）*/}
       <div
         style={{
           position: "absolute",
@@ -63,10 +66,9 @@ export default function App() {
       >
         <Canvas
           camera={{ position: [0, 0, isMobile ? 7.2 : 6], fov: 45 }}
-          gl={{ antialias: true, alpha: false }}
+          gl={{ antialias: true, alpha: true }}
           style={{ width: "100%", height: "100%" }}
         >
-          <color attach="background" args={["#ffffff"]} />
           <ambientLight intensity={0.5} />
           <directionalLight position={[5, 8, 5]} intensity={1} />
           <pointLight position={[-5, 3, 2]} intensity={0.3} color="#d4a574" />
@@ -77,7 +79,7 @@ export default function App() {
       </div>
 
       <UIOverlay isMobile={isMobile} />
-      {/* ✅ 调试用：安全区域红框（useAlbumClick.js 第185~199行的2D矩形，调试完直接删这段） */}
+      {/*  调试用：安全区域红框（useAlbumClick.js 第 85~199 行的2D矩形，调试完直接删这段）*/}
       {/* <div
         style={{
           position: "fixed",
@@ -86,12 +88,12 @@ export default function App() {
           left: "50%",
           top: "50%",
           transform: `translate(calc(-50% + ${isMobile ? SAFE_OFFSET_X_MOBILE : SAFE_OFFSET_X_WEB}px), calc(-50% + ${isMobile ? SAFE_OFFSET_Y_MOBILE : SAFE_OFFSET_Y_WEB}px))`,
-          // ✅ 100% 和 useAlbumClick.js 判定同步（都读 layout.js 的常量）
+          //  100% 和 useAlbumClick.js 判定同步（都读 layout.js 的常量）
           width: `calc(${(isMobile ? SAFE_RX_MOBILE : SAFE_RX_WEB) * 2 * 100}vw)`,
           height: `calc(${(isMobile ? SAFE_RY_MOBILE : SAFE_RY_WEB) * 2 * 100}vh)`,
           border: "3px dashed #ff0000",
           boxSizing: "border-box",
-          boxShadow: "0 0 0 9999px rgba(255,0,0,0.05)", // 红框外轻微染红，一眼看到区外
+          boxShadow: "0 0 0 9999px rgba(255,0,0,0.05)", // 红框外轻微染红，一眼看到区域
         }}
       >
         <div
@@ -111,7 +113,7 @@ export default function App() {
             pointerEvents: "none",
           }}
         >
-          🔴 红框内 = 点盒子 (toggleAlbum) | 红框外 = 点空白 (collapse)
+          馃敶 红框内 = 点盒子 (toggleAlbum) | 红框外 = 点空白 (collapse)
         </div>
         <div
           style={{
@@ -131,7 +133,7 @@ export default function App() {
           }}
         >
           调大小：去 useAlbumClick.js 第 190~191 行改 RX/RY 的
-          0.22/0.3（web）/0.4/0.34（手机），数字越大红框越大
+          0.22/0.3（web）0.4/0.34（手机），数字越大红框越大
         </div>
       </div> */}
     </div>

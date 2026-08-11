@@ -148,17 +148,17 @@ const styles = {
     marginBottom: "clamp(40px, 6vw, 60px)",
   },
   brandTitle: {
-    fontSize: "clamp(11px, 1.2vw, 14px)",
+    fontSize: "clamp(15px, 1.2vw, 18px)",
     letterSpacing: "0.25em",
     textTransform: "uppercase",
-    color: "rgba(20,20,20,0.55)",
+    color: "rgba(20,20,20,0.95)",
     fontWeight: 400,
   },
   brandSub: {
-    fontSize: "clamp(8.5px, 0.9vw, 10px)",
+    fontSize: "clamp(11.5px, 0.9vw, 13px)",
     letterSpacing: "0.15em",
     textTransform: "uppercase",
-    color: "rgba(20,20,20,0.25)",
+    color: "rgba(0, 0, 0, 0.95)",
   },
 
   // --- 底部进度条（跟 InfoPanel 完全一致的颜色/高度）---

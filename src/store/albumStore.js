@@ -86,6 +86,7 @@ export const useAlbumStore = create((set, get) => ({
   setScrollOffset: (scrollOffset) => set({ scrollOffset }),
   setProgress: (p, current, total) =>
     set({ progress: p, currentTime: current, totalTime: total }),
+  setIsMobile: (isMobile) => set({ isMobile }), // ✅ 补上缺失的 action，useResponsive 报错根因
 }));
 
 // 把 audio 真实事件绑定到 Store（更新真实进度条）

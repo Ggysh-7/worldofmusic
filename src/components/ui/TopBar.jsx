@@ -1,10 +1,6 @@
-import { useAlbumStore } from "../../store/albumStore.js";
+﻿import { useAlbumStore } from "../../store/albumStore.js";
+import ShinyText from "../text/ShinyText.jsx";
 
-/**
- * 顶部栏：左上 Logo（Musicword / Digital Collection）+ 右上状态徽标 + Close 按钮
- * 手机 Close 使用圆形浮动按钮（.ovr-close-circle，UIOverlay @media 里已定义）
- * 桌面 Close 用带 hover 效果的边框按钮
- */
 export default function TopBar() {
   const { activeAlbum, status, closeAlbum, isMobile } = useAlbumStore();
 
@@ -12,9 +8,15 @@ export default function TopBar() {
     <div style={styles.topBar}>
       {/* 左上 Logo */}
       <div style={styles.brand}>
-        <span className="ovr-brand-title" style={styles.brandTitle}>
-          Musicword
-        </span>
+        <ShinyText
+          text="Musicword"
+          speed={2}
+          color="rgba(20,20,20,0.5)"
+          shineColor="rgba(20,20,20,1)"
+          spread={120}
+          direction="left"
+          className="top-brand-title"
+        />
         <span className="ovr-brand-sub" style={styles.brandSub}>
           Digital Collection
         </span>
@@ -28,7 +30,7 @@ export default function TopBar() {
               style={{
                 ...styles.dot,
                 background:
-                  status === "playing" ? "#b8865a" : "rgba(20,20,20,0.3)",
+                  status === "playing" ? "#E6397C" : "rgba(20,20,20,0.3)",
               }}
             />
             <span style={styles.statusText}>
@@ -84,14 +86,6 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: "2px",
-  },
-  brandTitle: {
-    fontSize: "13px",
-    fontWeight: 400,
-    letterSpacing: "0.25em",
-    textTransform: "uppercase",
-    color: "rgba(20,20,20,0.5)",
-    margin: 0,
   },
   brandSub: {
     fontSize: "10px",
