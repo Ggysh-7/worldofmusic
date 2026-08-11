@@ -54,20 +54,24 @@ export default function useAlbumClick({
   // --- 辅助：从 intersects 命中里挑「真的视觉上点中了某本专辑」的 album 对象
   //     ✅ 修复核心：命中「盒子背面（DoubleSide 下法线和射线同向）」→ 直接返回 null，算空白
   //     ✅ 额外：status≠browse 时，命中 activeAlbum 且 distance 异常（打在了延伸面上）→ 也过滤
-  function pickAlbumFromIntersects(intersects, debug = false) {
+  function pickAlbumFromIntersects(
+    intersects,
+    debug = false,
+    status = "browse",
+  ) {
     if (!intersects || intersects.length === 0) return null;
     const hit = intersects[0];
     if (!hit?.object || !hit?.face) return null;
 
     // ======================================================
-    // ✅ 核心修复：命中背面的话，直接算「视觉上没点中」（空白）
-    // face.normal 和面的朝向一致；DoubleSide 下 Three.js 会把 normal 对射线翻转。
-    // 如果 normal · ray.direction > 0 → 命中的是背面（法线与射线同向）→ 丢弃
+    // ✅ 修复：只在 status!=browse（盒子正面对我们）时才过滤背面
+    //   Browse（一排书脊）时，露出的大封面是背面命中，绝对不能过滤！不然点红框那面没反应！
     // ======================================================
-    const dot = hit.face.normal.dot(raycaster.ray.direction);
-    const isBackFace = dot > 0;
-
-    if (isBackFace) return null;
+    if (status !== "browse") {
+      const dot = hit.face.normal.dot(raycaster.ray.direction);
+      const isBackFace = dot > 0;
+      if (isBackFace) return null;
+    }
 
     // 正面命中 → 向上冒泡找 userData.album
     let obj = hit.object;
@@ -97,7 +101,7 @@ export default function useAlbumClick({
       if (ref?.group) targets.push(ref.group);
     });
     const intersects = raycaster.intersectObjects(targets, true);
-    const albumHit = pickAlbumFromIntersects(intersects, true);
+    const albumHit = pickAlbumFromIntersects(intersects, true, status);
     const hitIdx = albumHit
       ? albums.findIndex((a) => a.id === albumHit.id)
       : null;
@@ -162,7 +166,7 @@ export default function useAlbumClick({
       if (ref?.group) targets.push(ref.group);
     });
     const intersects = raycaster.intersectObjects(targets, true);
-    const albumHit = pickAlbumFromIntersects(intersects);
+    const albumHit = pickAlbumFromIntersects(intersects, false, status);
     if (albumHit) {
       // ✅ 情况 1：真的命中了 album 的某一面 → 切换/toggle
       if (activeAlbum?.id === albumHit.id) toggleAlbum();

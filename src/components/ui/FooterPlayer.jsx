@@ -16,7 +16,7 @@ export default function FooterPlayer() {
             direction="right"
             fade={0.65}
             blur={2}
-            tint="#E6397C"
+            tint="#01847F"
             mode="both"
             cursorRadius={200}
             duration={600}
@@ -28,16 +28,51 @@ export default function FooterPlayer() {
         </div>
       )}
       <div className={isMobile ? "ovr-footer-stack" : ""} style={styles.footer}>
-        <ShinyText text="3D Album Collection" speed={1.5} color="rgba(20,20,20,0.2)" shineColor="rgba(20,20,20,0.7)" spread={120} direction="left" className="footer-shiny" />
-        <ShinyText text="Ggysh7" speed={1.5} color="rgba(20,20,20,0.2)" shineColor="rgba(20,20,20,0.7)" spread={120} direction="left" className="footer-shiny" />
-        {activeAlbum && <span style={styles.footerTrack}>{activeAlbum.artist} — {activeAlbum.title}</span>}
+        <ShinyText
+          text="3D Album Collection"
+          speed={1.5}
+          color="rgba(20,20,20,0.2)"
+          shineColor="rgba(20,20,20,0.7)"
+          spread={120}
+          direction="left"
+          className="footer-shiny"
+        />
+        <ShinyText
+          text="Ggysh7"
+          speed={1.5}
+          color="rgba(20,20,20,0.2)"
+          shineColor="rgba(20,20,20,0.7)"
+          spread={120}
+          direction="left"
+          className="footer-shiny"
+        />
+        {activeAlbum && (
+          <span style={styles.footerTrack}>
+            {activeAlbum.artist} — {activeAlbum.title}
+          </span>
+        )}
       </div>
     </>
   );
 }
 
 const styles = {
-  hint: { position: "absolute", bottom: "120px", left: 0, right: 0, textAlign: "center" },
-  footer: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", pointerEvents: "none" },
-  footerTrack: { fontSize: "9px", letterSpacing: "0.15em", color: "rgba(20,20,20,0.3)" },
+  hint: {
+    position: "absolute",
+    bottom: "120px",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+  },
+  footer: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    pointerEvents: "none",
+  },
+  footerTrack: {
+    fontSize: "9px",
+    letterSpacing: "0.15em",
+    color: "rgba(20,20,20,0.3)",
+  },
 };

@@ -111,15 +111,16 @@ const styles = {
   },
   progressTrack: {
     width: "100%",
-    height: "2px",
-    background: "rgba(240,236,228,0.1)",
-    borderRadius: "1px",
+    height: "3px", //
+    background: "rgba(1,132,127,0.3)",
+    borderRadius: "1.5px",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    background: "rgba(184,134,90,0.8)",
+    background: "#01847F",
     transition: "width 0.3s linear",
+    boxShadow: "0 0 8px rgba(1,132,127,0.4)",
   },
   time: {
     fontSize: "10px",
