@@ -186,8 +186,8 @@ export default function useAlbumClick({
       const h = window.innerHeight;
       // 📱 手机单独小一点（手机盒子整体缩小了）
       const mobile = typeof window !== "undefined" && window.innerWidth <= 768;
-      // 盒子封面视觉比例：Web 约宽 26% / 高 42%；手机约宽 40% / 高 34%
-      const RX = w * (mobile ? 0.4 : 0.14);
+      // 盒子封面视觉比例：Web 约宽 22% / 高 30%；手机约宽 40% / 高 34%
+      const RX = w * (mobile ? 0.4 : 0.22);
       const RY = h * (mobile ? 0.34 : 0.3);
       const cx = w / 2;
       const cy = h / 2;

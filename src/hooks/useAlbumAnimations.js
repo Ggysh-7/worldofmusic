@@ -8,7 +8,7 @@ import { BOX_W, BOX_D, SPACING, SPACING_MOBILE } from "../constants/layout.js";
  * （全部用普通 useEffect 写，不用任何外部辅助函数 → 彻底避免闭包锁旧值的坑）
  *
  * 包含 6 块：
- *   1. 入场：每个盒子从 y=1.2 scale=0 依次 back.out 弹出来（仅一次）
+ *   1. 入场：每个盒子从屏幕右外（base+5）依次从右→左平移推进（仅一次）
  *   2. Browse 滚动：scrollOffset 变化 → 所有盒子 x 轴平移
  *   3. Reset → Browse：status 切回 browse 时，所有盒子复位角度/位置/光碟收回
  *   4. Focus：activeAlbum 变化时，当前盒子放大推到 z=1.5 正面，其他缩到 z=-2.5 后面
@@ -22,41 +22,58 @@ export default function useAlbumAnimations({
   activeAlbum,
   scrollOffset,
   isMobile,
+  canStartScene,
 }) {
   const isEntering = useRef(false);
+  const isEnterAnimDone = useRef(false);
   const sp = isMobile ? SPACING_MOBILE : SPACING;
 
   // ======================================================
-  // ① 入场动画（仅执行一次：albums 从 0 → 有值时触发）
+  // ① 入场动画（仅一次：canStartScene=true 时触发）
   // ======================================================
   useEffect(() => {
-    if (storeAlbums.length === 0 || isEntering.current) return;
+    if (storeAlbums.length === 0 || isEntering.current || !canStartScene)
+      return;
     isEntering.current = true;
+    storeAlbums.forEach((_, i) => {
+      const ref = albumRefs.current[i];
+      if (!ref?.group) return;
+      const base = i * sp - ((storeAlbums.length - 1) * sp) / 2;
+      gsap.killTweensOf([
+        ref.group.position,
+        ref.group.rotation,
+        ref.group.scale,
+      ]);
+      gsap.set(ref.group.position, { x: base + 5.0, y: 0, z: 0 });
+      gsap.set(ref.group.rotation, { x: 0, y: Math.PI / 2, z: 0 });
+      gsap.set(ref.group.scale, { x: 1, y: 1, z: 1 });
+    });
     const tl = gsap.timeline();
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
-      gsap.killTweensOf([ref.group.position, ref.group.scale]);
-      ref.group.scale.set(0, 0, 0);
-      ref.group.position.y = 1.2;
-      tl.to(
-        ref.group.scale,
-        { x: 1, y: 1, z: 1, duration: 0.55, ease: "back.out(1.7)" },
-        i * 0.06,
-      );
+      const base = i * sp - ((storeAlbums.length - 1) * sp) / 2;
       tl.to(
         ref.group.position,
-        { y: 0, duration: 0.55, ease: "power2.out" },
+        { x: base, duration: 0.85, ease: "power3.out" },
         i * 0.06,
       );
     });
-  }, [storeAlbums.length, albumRefs, storeAlbums]);
+    setTimeout(
+      () => {
+        isEnterAnimDone.current = true;
+      },
+      ((storeAlbums.length - 1) * 0.06 + 0.85 + 0.1) * 1000,
+    );
+  }, [sp, storeAlbums.length, albumRefs, storeAlbums, canStartScene]);
 
   // ======================================================
   // ② Browse 滚动：scrollOffset → 所有盒子 x 平移（仅 browse 时才跑）
   // ======================================================
   useEffect(() => {
     if (status !== "browse") return;
+    if (!canStartScene) return;
+    if (!isEnterAnimDone.current) return;
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
@@ -68,13 +85,22 @@ export default function useAlbumAnimations({
         ease: "power2.out",
       });
     });
-  }, [status, scrollOffset, sp, storeAlbums.length, albumRefs, storeAlbums]);
+  }, [
+    status,
+    scrollOffset,
+    sp,
+    storeAlbums.length,
+    albumRefs,
+    storeAlbums,
+    canStartScene,
+  ]);
 
   // ======================================================
   // ③ Reset → Browse：status 切到 browse 时，所有盒子全复位
   // ======================================================
   useEffect(() => {
     if (status !== "browse") return;
+    if (!canStartScene) return;
     storeAlbums.forEach((_, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
@@ -114,7 +140,15 @@ export default function useAlbumAnimations({
         ref.disc.visible = false;
       }
     });
-  }, [status, sp, storeAlbums.length, scrollOffset, albumRefs, storeAlbums]);
+  }, [
+    status,
+    sp,
+    storeAlbums.length,
+    scrollOffset,
+    albumRefs,
+    storeAlbums,
+    canStartScene,
+  ]);
 
   // ======================================================
   // ④ Focus：status === "focus" + 有 activeAlbum 时跑
