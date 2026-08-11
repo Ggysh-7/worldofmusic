@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
+import {
+  SAFE_RX_WEB,
+  SAFE_RY_WEB,
+  SAFE_RX_MOBILE,
+  SAFE_RY_MOBILE,
+  SAFE_OFFSET_X_WEB,
+  SAFE_OFFSET_Y_WEB,
+  SAFE_OFFSET_X_MOBILE,
+  SAFE_OFFSET_Y_MOBILE,
+  MOBILE_BP,
+} from "../constants/layout.js";
 
 /**
  * 自定义 Hook：处理 3D 场景里的「盒子 hover 倾斜 + 点击切专辑」交互（raycaster 三件套）
@@ -185,12 +196,12 @@ export default function useAlbumClick({
       const w = window.innerWidth;
       const h = window.innerHeight;
       // 📱 手机单独小一点（手机盒子整体缩小了）
-      const mobile = typeof window !== "undefined" && window.innerWidth <= 768;
-      // 盒子封面视觉比例：Web 约宽 22% / 高 30%；手机约宽 40% / 高 34%
-      const RX = w * (mobile ? 0.4 : 0.22);
-      const RY = h * (mobile ? 0.34 : 0.3);
-      const cx = w / 2;
-      const cy = h / 2;
+      const mobile =
+        typeof window !== "undefined" && window.innerWidth <= MOBILE_BP;
+      const RX = w * (mobile ? SAFE_RX_MOBILE : SAFE_RX_WEB);
+      const RY = h * (mobile ? SAFE_RY_MOBILE : SAFE_RY_WEB);
+      const cx = w / 2 + (mobile ? SAFE_OFFSET_X_MOBILE : SAFE_OFFSET_X_WEB);
+      const cy = h / 2 + (mobile ? SAFE_OFFSET_Y_MOBILE : SAFE_OFFSET_Y_WEB);
       const inSafe =
         Math.abs(e.clientX - cx) <= RX && Math.abs(e.clientY - cy) <= RY;
 

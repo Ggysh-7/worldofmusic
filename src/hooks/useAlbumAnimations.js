@@ -159,13 +159,14 @@ export default function useAlbumAnimations({
     const focusScale = isMobile ? 0.88 : 1.2;
     const otherZ = isMobile ? -1.8 : -2.5;
     const otherScale = isMobile ? 0.7 : 0.8;
+    const FOCUS_OFFSET_X = isMobile ? 0 : -1.19;
     storeAlbums.forEach((album, i) => {
       const ref = albumRefs.current[i];
       if (!ref?.group) return;
       if (album.id === activeAlbum.id) {
         gsap.killTweensOf(ref.group.rotation, true);
         gsap.to(ref.group.position, {
-          x: 0,
+          x: FOCUS_OFFSET_X,
           y: 0,
           z: focusZ,
           duration: 0.7,

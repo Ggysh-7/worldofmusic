@@ -8,6 +8,17 @@ import UIOverlay from "./components/UIOverlay";
 import SplashScreen from "./components/ui/SplashScreen.jsx";
 import { useAlbumStore } from "./store/albumStore";
 import { albums } from "./data/albums";
+import {
+  SAFE_RX_WEB,
+  SAFE_RY_WEB,
+  SAFE_RX_MOBILE,
+  SAFE_RY_MOBILE,
+  SAFE_OFFSET_X_WEB,
+  SAFE_OFFSET_Y_WEB,
+  SAFE_OFFSET_X_MOBILE,
+  SAFE_OFFSET_Y_MOBILE,
+  MOBILE_BP,
+} from "./constants/layout.js";
 import { Environment } from "@react-three/drei";
 
 export default function App() {
@@ -66,6 +77,63 @@ export default function App() {
       </div>
 
       <UIOverlay isMobile={isMobile} />
+      {/* ✅ 调试用：安全区域红框（useAlbumClick.js 第185~199行的2D矩形，调试完直接删这段） */}
+      {/* <div
+        style={{
+          position: "fixed",
+          pointerEvents: "none", // 不挡点击
+          zIndex: 9998,
+          left: "50%",
+          top: "50%",
+          transform: `translate(calc(-50% + ${isMobile ? SAFE_OFFSET_X_MOBILE : SAFE_OFFSET_X_WEB}px), calc(-50% + ${isMobile ? SAFE_OFFSET_Y_MOBILE : SAFE_OFFSET_Y_WEB}px))`,
+          // ✅ 100% 和 useAlbumClick.js 判定同步（都读 layout.js 的常量）
+          width: `calc(${(isMobile ? SAFE_RX_MOBILE : SAFE_RX_WEB) * 2 * 100}vw)`,
+          height: `calc(${(isMobile ? SAFE_RY_MOBILE : SAFE_RY_WEB) * 2 * 100}vh)`,
+          border: "3px dashed #ff0000",
+          boxSizing: "border-box",
+          boxShadow: "0 0 0 9999px rgba(255,0,0,0.05)", // 红框外轻微染红，一眼看到区外
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: -32,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#ff0000",
+            fontWeight: 900,
+            fontSize: 14,
+            whiteSpace: "nowrap",
+            background: "#fff",
+            padding: "2px 10px",
+            borderRadius: 4,
+            border: "1px solid #ff0000",
+            pointerEvents: "none",
+          }}
+        >
+          🔴 红框内 = 点盒子 (toggleAlbum) | 红框外 = 点空白 (collapse)
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            bottom: -32,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#00aa00",
+            fontWeight: 800,
+            fontSize: 12,
+            whiteSpace: "nowrap",
+            background: "#fff",
+            padding: "2px 10px",
+            borderRadius: 4,
+            border: "1px solid #00aa00",
+            pointerEvents: "none",
+          }}
+        >
+          调大小：去 useAlbumClick.js 第 190~191 行改 RX/RY 的
+          0.22/0.3（web）/0.4/0.34（手机），数字越大红框越大
+        </div>
+      </div> */}
     </div>
   );
 }

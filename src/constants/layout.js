@@ -30,3 +30,17 @@ export const MOBILE_BP = 768;
 /* ---------- 渲染通用参数 ---------- */
 export const TEX_MAX_ANISOTROPY = 8;
 export const TEX_SPINE_ANISOTROPY = 4;
+
+/* ---------- 点击安全区（2D 屏幕中心矩形：useAlbumClick.js + App.jsx 调试红框 100% 同步共用）---------- */
+// Web 端：安全区半宽 / 半高（占屏幕比例，0.22 = 22%，改大=安全区变大）
+export const SAFE_RX_WEB = 0.17;
+export const SAFE_RY_WEB = 0.315;
+// 手机端：安全区半宽 / 半高（占屏幕比例）
+export const SAFE_RX_MOBILE = 0.38;
+export const SAFE_RY_MOBILE = 0.25;
+
+// 安全区平移偏移量（正数=右移/下移，负数=左移/上移，单位=px）
+export const SAFE_OFFSET_X_WEB = -125; // Web 左右平移：0=不动，-80=左移80px，+80=右移80px
+export const SAFE_OFFSET_Y_WEB = 0; // Web 上下平移：0=不动，-80=上移80px，+80=下移80px
+export const SAFE_OFFSET_X_MOBILE = -48; // 手机左右平移
+export const SAFE_OFFSET_Y_MOBILE = 0; // 手机上下平移
